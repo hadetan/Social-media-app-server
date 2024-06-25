@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const configs = require('../configs');
 const { customError } = require('../utils/responseWrapper');
+const User = require('../models/User.schema');
 
 module.exports = async (req, res, next) => {
     if (
@@ -16,6 +17,12 @@ module.exports = async (req, res, next) => {
     try {
         const decoded = jwt.verify(accessToken, configs.JWT_ACCESS_KEY);
         req._id = decoded._id;
+
+        const user = await User.findById(req._id);
+        if (!user) {
+            return res.send(customError(404, 'User not found'));
+        }
+
         next();
     } catch (error) {
         console.log(error);

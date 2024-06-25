@@ -2,19 +2,19 @@ const success = (statusCode, result) => {
     return {
         status: 'ok',
         statusCode,
-        result
-    }
-}
+        result,
+    };
+};
 
 const customError = (statusCode, message) => {
     return {
         status: 'error',
         statusCode,
-        message
-    }
-}
+        message,
+    };
+};
 
 module.exports = {
-    success, 
-    customError
-}
+    success,
+    customError,
+};

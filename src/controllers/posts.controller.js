@@ -6,6 +6,10 @@ const createPostController = async (req, res) => {
     try {
         const { caption } = req.body;
 
+        if (!caption) {
+            return res.send(customError(400, 'Caption is required'));
+        }
+
         const owner = req._id;
 
         const user = await User.findById(owner);

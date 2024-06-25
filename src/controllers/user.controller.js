@@ -61,10 +61,110 @@ const getPostsOfFollowing = async (req, res) => {
     }
 };
 
+const getMyPosts = async (req, res) => {
+    try {
+        const curUser = req._id;
+
+        const myAllPosts = await Post.find({
+            owner: curUser,
+        }).populate('likes');
+
+        return res.send(success(200, { myAllPosts }));
+    } catch (error) {
+        return res.send(500, error.message);
+    }
+};
+
+const getUserPosts = async (req, res) => {
+    try {
+        const { userId } = req.body;
+
+        if (!userId) {
+            return res.send(customError(400, 'User ID is required'));
+        }
+
+        if (!userId) {
+            return res.send(customError(404, 'User not found'));
+        }
+
+        const userAllPosts = await Post.find({
+            owner: userId,
+        }).populate('likes');
+
+        return res.send(success(200, { userAllPosts }));
+    } catch (error) {
+        return res.send(500, error.message);
+    }
+};
+
+const deleteMyProfile = async (req, res) => {
+    try {
+        const curUserId = req._id;
+        const curUser = await User.findById(curUserId);
+
+        if (!curUser) {
+            return res.send(customError(404, 'User not found'));
+        }
+
+        // Delete all posts from this user
+        await Post.deleteMany({
+            owner: curUserId,
+        });
+
+        // Removed this user from followers followings
+        curUser.followers.map(async (followerId) => {
+            const follower = await User.findById(followerId);
+            if (follower) {
+                const index = follower.followings.indexOf(curUserId);
+                if (index > -1) {
+                    follower.followings.splice(index, 1);
+                    await follower.save();
+                }
+            }
+        });
+
+        // Remove this user from followings followers
+        curUser.followings.map(async (followingId) => {
+            const following = await User.findById(followingId);
+            if (following) {
+                const index = following.followers.indexOf(curUserId);
+                if (index > -1) {
+                    following.followers.splice(index, 1);
+                    await following.save();
+                }
+            }
+        });
+
+        // Remove this user from all likes
+        const allPosts = await Post.find();
+        allPosts.map(async (post) => {
+            const index = post.likes.indexOf(curUserId);
+            if (index > -1) {
+                post.likes.splice(index, 1);
+                await post.save();
+            }
+        });
+
+        // Delete user
+        await curUser.deleteOne();
+
+        // Delete users cookie
+        res.clearCookie('jwt', {
+            httpOnly: true,
+            secure: true,
+        });
+
+        return res.send(success(200, 'User deleted successfully'));
+    } catch (error) {
+        console.log(error);
+        return res.send(customError(500, error.message));
+    }
+};
+
 module.exports = {
     followOrUnfollowUserController,
     getPostsOfFollowing,
-    // getMyPosts
-    // getUserPosts
-    // deleteMyProfile
+    getMyPosts,
+    getUserPosts,
+    deleteMyProfile,
 };
