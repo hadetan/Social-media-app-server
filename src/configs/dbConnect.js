@@ -1,10 +1,9 @@
 const mongoose = require('mongoose');
-const config = require('./index');
 const { ServerApiVersion } = require('mongodb');
-const asyncHandler = require('../utils/asyncHandler');
+const configs = require('./index');
 
-module.exports = asyncHandler(async () => {
-    const MONGO_URI = config.MONGO_URI;
+module.exports = async () => {
+    const MONGO_URI = configs.MONGO_URI;
     try {
         const connect = await mongoose.connect(MONGO_URI, {
             serverApi: {
@@ -18,4 +17,4 @@ module.exports = asyncHandler(async () => {
         console.error(e);
         process.exit(1);
     }
-});
+};

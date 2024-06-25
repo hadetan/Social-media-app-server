@@ -1,15 +1,17 @@
 {
-  "name": "social-media-backend-server",
+  "name": "social-media-server",
   "version": "1.0.0",
-  "description": "Building a project for social media application",
+  "description": "a social media application's server",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "aquib ali",
+  "author": "Aquib Ali",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",

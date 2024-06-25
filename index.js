@@ -1,27 +1,34 @@
 const express = require('express');
-const config = require('./src/configs/index');
-const dbConnected = require('./src/configs/dbConnect');
-const routes = require('./src/routes/index');
+const configs = require('./src/configs');
+const dbConnect = require('./src/configs/dbConnect');
+const mainRoute = require('./src/routes/index');
 const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
+const cors = require('cors');
 
 const app = express();
 
-// Middlewares
+//Middlewares
 app.use(express.json());
 app.use(morgan('common'));
+app.use(cookieParser());
+app.use(cors({
+    credentials: true,
+    origin: 'http://localhost:3000'
+}));
 
-app.use('/api', routes);
-
-app.get('/', (_req, res) => {
-    res.status(200).json({
-        success: true,
-        message: 'Server is running successfully',
+//Routes
+app.get('/', (req, res) => {
+    res.status(200).send({
+        message: 'ok',
     });
 });
 
-dbConnected();
+app.use('/api', mainRoute);
 
-const PORT = config.PORT;
+// Connection
+dbConnect();
+PORT = configs.PORT;
 app.listen(PORT, () => {
-    console.log(`Listening on port ${PORT}`);
+    console.log(`listening on port: ${PORT}`);
 });
