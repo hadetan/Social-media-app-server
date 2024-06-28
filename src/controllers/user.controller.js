@@ -1,6 +1,8 @@
 const User = require('../models/User.schema');
 const Post = require('../models/Post.schema');
 const { customError, success } = require('../utils/responseWrapper');
+const { mapPostOutput } = require('../utils/utils');
+const cloudinary = require('cloudinary').v2;
 
 const followOrUnfollowUserController = async (req, res) => {
     try {
@@ -50,8 +52,8 @@ const getPostsOfFollowing = async (req, res) => {
         const curUser = await User.findById(curUserId);
 
         const posts = await Post.find({
-            'owner': {
-                '$in': curUser.followings,
+            owner: {
+                $in: curUser.followings,
             },
         });
 
@@ -71,7 +73,7 @@ const getMyPosts = async (req, res) => {
 
         return res.send(success(200, { myAllPosts }));
     } catch (error) {
-        return res.send(500, error.message);
+        return res.send(customError(500, error.message));
     }
 };
 
@@ -93,7 +95,75 @@ const getUserPosts = async (req, res) => {
 
         return res.send(success(200, { userAllPosts }));
     } catch (error) {
-        return res.send(500, error.message);
+        return res.send(customError(500, error.message));
+    }
+};
+
+const getMyInfo = async (req, res) => {
+    try {
+        const user = await User.findById(req._id);
+        return res.send(success(200, { user }));
+    } catch (error) {
+        return res.send(customError(500, error.message));
+    }
+};
+
+const getUserProfile = async (req, res) => {
+    try {
+        const userId = req.body.userId;
+
+        const user = await User.findById(userId).populate({
+            path: 'posts',
+            populate: {
+                path: 'owner',
+            },
+        });
+
+        if (!user) {
+            return res.send(customError(404, 'User not found'));
+        }
+
+        const allPosts = user.posts;
+
+        const posts = allPosts
+            .map((item) => mapPostOutput(item, req._id))
+            .reverse();
+
+        return res.send(success(200, { ...user._doc, posts }));
+    } catch (error) {
+        console.log(error);
+        return res.send(customError(500, error.message));
+    }
+};
+
+const updateUserProfile = async (req, res) => {
+    try {
+        const { name, bio, userImg } = req.body;
+
+        const user = await User.findById(req._id);
+
+        if (name) {
+            user.name = name;
+        }
+
+        if (bio) {
+            user.bio = bio;
+        }
+
+        if (userImg) {
+            const cloudImg = await cloudinary.uploader.upload(userImg, {
+                folder: 'profileImg',
+            });
+            user.avatar = {
+                url: cloudImg.secure_url,
+                publicId: cloudImg.public_id,
+            };
+        }
+
+        await user.save();
+        return res.send(success(200, { user }));
+    } catch (error) {
+        return res.send(customError(500, error.message));
     }
 };
 
@@ -156,7 +226,6 @@ const deleteMyProfile = async (req, res) => {
 
         return res.send(success(200, 'User deleted successfully'));
     } catch (error) {
-        console.log(error);
         return res.send(customError(500, error.message));
     }
 };
@@ -166,5 +235,8 @@ module.exports = {
     getPostsOfFollowing,
     getMyPosts,
     getUserPosts,
+    getMyInfo,
+    getUserProfile,
+    updateUserProfile,
     deleteMyProfile,
 };
