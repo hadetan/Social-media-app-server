@@ -8,6 +8,7 @@ A social media web app that is build using NodeJS and ReactJS [Frontend Link](ht
 - [Usage](#usage)
 - [API Documentation](#api-documentation)
 - [Database](#database)
+- [Environments](#environments)
 - [License](#license)
 - [Contact Information](#contact-information)
 
@@ -108,6 +109,17 @@ ${server url}/api/v1
 ### Schema
 - `users`: Email (required), Password (required), Name, Bio, Avatar, Followers, Followings, Posts.
 - `posts`: Owner [Referred to `user`], Image, Caption, Likes [Referred to `user`].
+
+## Environments
+```bash
+PORT=any_port
+MONGO_URI=your_mongodb_atlas_url
+JWT_ACCESS_KEY=randomized_string_for_jwt_access_token
+JWT_REFRESH_KEY=randomized_string_for_jwt_refresh_token
+CLOUD_NAME=your_cloudinary_name
+CLOUD_API_KEY=your_cloudinary_api_key
+CLOUD_API_SECRET=your_cloudinary_api_secret_key
+```
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
