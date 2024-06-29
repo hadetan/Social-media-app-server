@@ -19,7 +19,7 @@ A social media web app that is build using NodeJS and ReactJS [Frontend Link](ht
 ### Setup Instructions
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/yourproject.git
+git clone https://github.com/hadetan/Social-media-app-server.git
 
 # Navigate to the project directory
 cd yourproject
