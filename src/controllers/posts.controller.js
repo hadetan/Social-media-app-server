@@ -1,6 +1,7 @@
 const { success, customError } = require('../utils/responseWrapper');
 const Post = require('../models/Post.schema');
 const User = require('../models/User.schema');
+const { mapPostOutput } = require('../utils/utils');
 const cloudinary = require('cloudinary').v2;
 
 const createPostController = async (req, res) => {
@@ -31,7 +32,7 @@ const createPostController = async (req, res) => {
         await user.posts.push(post._id);
         await user.save();
 
-        return res.send(success(201, post));
+        return res.send(success(201, { post }));
     } catch (error) {
         return res.send(customError(500, error.message));
     }
@@ -42,7 +43,7 @@ const likeAndUnlikePostController = async (req, res) => {
         const { postId } = req.body;
         const curUserId = req._id;
 
-        const post = await Post.findById(postId);
+        const post = await Post.findById(postId).populate('owner');
         if (!post) {
             return res.send(customError(404, 'Post not found'));
         }
@@ -50,14 +51,12 @@ const likeAndUnlikePostController = async (req, res) => {
         if (post.likes.includes(curUserId)) {
             const index = post.likes.indexOf(curUserId);
             post.likes.splice(index, 1);
-
-            await post.save();
-            return res.send(success(200, 'Post unliked successfully'));
         } else {
             post.likes.push(curUserId);
-            await post.save();
-            return res.send(success(200, 'Post liked successfully'));
         }
+
+        await post.save();
+        return res.send(success(200, { post: mapPostOutput(post, req._id)}));
     } catch (error) {
         return res.send(customError(500, error.message));
     }

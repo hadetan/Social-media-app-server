@@ -28,7 +28,20 @@ const signupController = async (req, res) => {
             name,
         });
 
-        return res.send(success(201, 'User created successfully'));
+        const accessToken = generateAccessToken({
+            _id: user._id,
+        });
+
+        const refreshToken = generateRefreshToken({
+            _id: user._id,
+        });
+
+        res.cookie('jwt', refreshToken, {
+            httpOnly: true,
+            secure: true,
+        });
+
+        return res.send(success(201, { accessToken, refreshToken }));
     } catch (error) {
         return res.send(customError(500, error.message));
     }

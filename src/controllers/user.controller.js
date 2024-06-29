@@ -26,38 +26,46 @@ const followOrUnfollowUserController = async (req, res) => {
 
             const followerIndex = userToFollow.followers.indexOf(curUser);
             userToFollow.followers.splice(followerIndex, 1);
-
-            await userToFollow.save();
-            await curUser.save();
-
-            return res.send(success(200, 'User unfollowed successfully'));
         } else {
             userToFollow.followers.push(curUserId);
             curUser.followings.push(userIdToFollow);
-
-            await userToFollow.save();
-            await curUser.save();
-
-            return res.send(success(200, 'User followed successfully'));
         }
+
+        await userToFollow.save();
+        await curUser.save();
+
+        return res.send(success(200, { user: userToFollow }));
     } catch (error) {
         return res.send(customError(500, error.message));
     }
 };
 
-const getPostsOfFollowing = async (req, res) => {
+const getFeedData = async (req, res) => {
     try {
         const curUserId = req._id;
 
-        const curUser = await User.findById(curUserId);
+        const curUser = await User.findById(curUserId).populate('followings');
 
-        const posts = await Post.find({
+        const allPosts = await Post.find({
             owner: {
                 $in: curUser.followings,
             },
+        }).populate('owner');
+
+        const posts = allPosts
+            .map((item) => mapPostOutput(item, req._id))
+            .reverse();
+
+        const followingsId = curUser.followings.map((item) => item._id);
+        followingsId.push(req._id);
+
+        const suggestions = await User.find({
+            _id: {
+                $nin: followingsId,
+            },
         });
 
-        return res.send(success(200, posts));
+        return res.send(success(200, { ...curUser._doc, suggestions, posts }));
     } catch (error) {
         return res.send(customError(500, error.message));
     }
@@ -177,48 +185,39 @@ const deleteMyProfile = async (req, res) => {
         }
 
         // Delete all posts from this user
-        await Post.deleteMany({
-            owner: curUserId,
-        });
+        await Post.deleteMany({ owner: curUserId });
 
-        // Removed this user from followers followings
-        curUser.followers.map(async (followerId) => {
-            const follower = await User.findById(followerId);
-            if (follower) {
-                const index = follower.followings.indexOf(curUserId);
-                if (index > -1) {
-                    follower.followings.splice(index, 1);
-                    await follower.save();
-                }
-            }
-        });
+        // Remove this user from followers' followings
+        for (const followerId of curUser.followers) {
+            await User.updateOne(
+                { _id: followerId },
+                { $pull: { followings: curUserId } }
+            );
+        }
 
-        // Remove this user from followings followers
-        curUser.followings.map(async (followingId) => {
-            const following = await User.findById(followingId);
-            if (following) {
-                const index = following.followers.indexOf(curUserId);
-                if (index > -1) {
-                    following.followers.splice(index, 1);
-                    await following.save();
-                }
-            }
-        });
+        // Remove this user from followings' followers
+        for (const followingId of curUser.followings) {
+            await User.updateOne(
+                { _id: followingId },
+                { $pull: { followers: curUserId } }
+            );
+        }
 
         // Remove this user from all likes
         const allPosts = await Post.find();
-        allPosts.map(async (post) => {
-            const index = post.likes.indexOf(curUserId);
-            if (index > -1) {
-                post.likes.splice(index, 1);
-                await post.save();
+        for (const post of allPosts) {
+            if (post.likes.includes(curUserId)) {
+                await Post.updateOne(
+                    { _id: post._id },
+                    { $pull: { likes: curUserId } }
+                );
             }
-        });
+        }
 
         // Delete user
         await curUser.deleteOne();
 
-        // Delete users cookie
+        // Delete user's cookie
         res.clearCookie('jwt', {
             httpOnly: true,
             secure: true,
@@ -232,7 +231,7 @@ const deleteMyProfile = async (req, res) => {
 
 module.exports = {
     followOrUnfollowUserController,
-    getPostsOfFollowing,
+    getFeedData,
     getMyPosts,
     getUserPosts,
     getMyInfo,

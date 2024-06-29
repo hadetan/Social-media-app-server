@@ -1,6 +1,6 @@
 const {
     followOrUnfollowUserController,
-    getPostsOfFollowing,
+    getFeedData,
     getMyPosts,
     getUserPosts,
     deleteMyProfile,
@@ -15,8 +15,8 @@ const router = require('express').Router();
 // To follow or unfollow a user
 router.post('/follow', requireUser, followOrUnfollowUserController);
 
-// To get all posts whom we have followed
-router.get('/getPostsOfFollowing', requireUser, getPostsOfFollowing);
+// To get all posts and users data for our feed
+router.get('/getFeedData', requireUser, getFeedData);
 
 // To get my all posts
 router.get('/getMyPosts', requireUser, getMyPosts);
